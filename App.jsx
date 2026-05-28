@@ -36,13 +36,13 @@ const parseCSVLine = (text) => {
 };
 
 export default function App() {
-  // 1. 從本地 localStorage 載入資料
+  // 从本地 localStorage 载入资料
   const [customers, setCustomers] = useState(() => {
     const saved = localStorage.getItem('sd_customer_records_v1');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // 2. 當資料變動時，自動存入 localStorage
+  // 当资料变动时，自动存入 localStorage
   useEffect(() => {
     localStorage.setItem('sd_customer_records_v1', JSON.stringify(customers));
   }, [customers]);
@@ -51,13 +51,13 @@ export default function App() {
   const [minSessions, setMinSessions] = useState(0);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
-  // Modal 狀態
+  // Modal 状态
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   
-  // 自訂確認對話框狀態
+  // 自订确认对话框状态
   const [confirmDialog, setConfirmDialog] = useState({ 
     isOpen: false, 
     message: '', 
@@ -66,19 +66,19 @@ export default function App() {
     confirmStyle: 'danger' 
   });
   
-  // 表單狀態
+  // 表单状态
   const [formData, setFormData] = useState({
     name: '', phone: '', birthday: '', initialSessions: 0, initialPrice: 0, notes: ''
   });
   
-  // 購買課程表單狀態
+  // 购买课程表单状态
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
   const [sessionToAdd, setSessionToAdd] = useState(10);
   const [purchasePrice, setPurchasePrice] = useState('');
 
   const fileInputRef = useRef(null);
 
-  // ---------------- 衍生狀態與統計 ----------------
+  // ---------------- 衍生状态与统计 ----------------
   const filteredCustomers = useMemo(() => {
     let result = customers.filter(c => {
       const stats = getCustomerStats(c.purchases);
@@ -137,7 +137,7 @@ export default function App() {
   const filteredCustomersCount = filteredCustomers.length;
   const filteredSessionsCount = filteredCustomers.reduce((sum, c) => sum + getCustomerStats(c.purchases).totalSessions, 0);
 
-  // ---------------- 處理函數 ----------------
+  // ---------------- 处理函数 ----------------
   const handleSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -184,6 +184,20 @@ export default function App() {
     });
   };
 
+  // 一鍵刪除所有資料功能
+  const handleClearAllCustomers = () => {
+    setConfirmDialog({
+      isOpen: true,
+      message: '⚠️ 警告：確定要清空系統內的所有顧客資料與購課紀錄嗎？此操作無法回復！建議在執行前先匯出 CSV 進行備份。',
+      confirmText: '確定清空所有資料',
+      confirmStyle: 'danger',
+      onConfirm: () => {
+        setCustomers([]);
+        setConfirmDialog({ isOpen: false, message: '', onConfirm: null, confirmText: '確定', confirmStyle: 'danger' });
+      }
+    });
+  };
+
   const handleDeletePurchase = (customerId, purchaseId) => {
     setConfirmDialog({
       isOpen: true,
@@ -194,7 +208,7 @@ export default function App() {
         setCustomers(prev => prev.map(c => {
           if (c.id === customerId) {
             const updated = { ...c, purchases: c.purchases.filter(p => p.id !== purchaseId) };
-            setEditingCustomer(updated); // 同時更新目前打開的明細視窗
+            setEditingCustomer(updated); 
             return updated;
           }
           return c;
@@ -207,12 +221,10 @@ export default function App() {
   const handleSaveCustomer = (e) => {
     e.preventDefault();
     if (editingCustomer) {
-      // 編輯既有顧客
       setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { 
         ...c, name: formData.name, phone: formData.phone, birthday: formData.birthday, notes: formData.notes 
       } : c));
     } else {
-      // 新增顧客
       const newCustomer = {
         id: Date.now().toString(),
         name: formData.name,
@@ -382,6 +394,18 @@ export default function App() {
             <button onClick={() => fileInputRef.current.click()} className="flex items-center gap-2 bg-white text-indigo-600 px-4 py-2 rounded-full font-semibold hover:bg-indigo-50 transition-colors shadow-sm" title="請上傳 .csv 檔案"><Upload className="w-4 h-4" />匯入</button>
             <button onClick={handleExportCSV} className="flex items-center gap-2 bg-white text-indigo-600 px-4 py-2 rounded-full font-semibold hover:bg-indigo-50 transition-colors shadow-sm"><Download className="w-4 h-4" />匯出</button>
             <button onClick={handleOpenAddCustomer} className="flex items-center gap-2 bg-white text-indigo-600 px-4 py-2 rounded-full font-semibold hover:bg-indigo-50 transition-colors shadow-sm sm:ml-2"><UserPlus className="w-4 h-4" />新增</button>
+            
+            {/* 一鍵清空按鈕：只有在有資料時才顯示，避免誤觸，使用醒目的紅色邊框與字體 */}
+            {customers.length > 0 && (
+              <button 
+                onClick={handleClearAllCustomers} 
+                className="flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-full font-semibold hover:bg-red-100 transition-colors shadow-sm"
+                title="清空系統所有資料"
+              >
+                <Trash2 className="w-4 h-4" />
+                清空
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -544,7 +568,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal: 購買新課程 */}
+      {/* Modal: 购买新课程 */}
       {isSessionModalOpen && editingCustomer && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
@@ -585,7 +609,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal: 查看購買明細 */}
+      {/* Modal: 查看购买明细 */}
       {isHistoryModalOpen && editingCustomer && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
@@ -633,7 +657,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal: 自訂確認對話框 */}
+      {/* Modal: 自订确认对话框 */}
       {confirmDialog.isOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-6 text-center">
